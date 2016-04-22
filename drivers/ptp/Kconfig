@@ -118,4 +118,15 @@ config PTP_1588_CLOCK_KVM
 	  To compile this driver as a module, choose M here: the module
 	  will be called ptp_kvm.
 
+config PTP_1588_CLOCK_CAVIUM
+	tristate "Cavium PTP coprocessor as PTP clock"
+	select PTP_1588_CLOCK
+	default y
+	help
+	  This driver adds support for using the Cavium PTP coprocessor as a
+	  PTP clock.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called ptp_cavium.
+
 endmenu
