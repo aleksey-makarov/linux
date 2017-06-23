@@ -2469,7 +2469,7 @@ void register_console(struct console *newcon)
 	     i < MAX_CMDLINECONSOLES && c->name[0];
 	     i++, c++) {
 		if (!newcon->match ||
-		    newcon->match(newcon, c->name, c->index, c->options) != 0) {
+		    newcon->match2(newcon, c->name, c->index, c->options) != 0) {
 			/* default matching */
 			BUILD_BUG_ON(sizeof(c->name) != sizeof(newcon->name));
 			if (strcmp(c->name, newcon->name) != 0)
