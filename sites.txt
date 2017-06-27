@@ -1,0 +1,150 @@
+- drivers/char/lp.c:821:static struct console lpcons = {
+x drivers/char/virtio_console.c:84:struct console {
+x drivers/char/virtio_console.c:222:	struct console cons;
+- drivers/usb/early/xhci-dbc.c:915:static struct console early_xdbc_console = {
+- drivers/usb/early/ehci-dbgp.c:964:struct console early_dbgp_console = {
+- drivers/usb/gadget/function/u_serial.c:1047:static struct console gserial_cons;
+- drivers/usb/gadget/function/u_serial.c:1239:static struct console gserial_cons = {
+- drivers/usb/serial/console.c:32:static struct console usbcons;
+- drivers/usb/serial/console.c:256:static struct console usbcons = {
+- drivers/misc/pti.c:732:static struct console pti_console = {
+- drivers/s390/char/sclp_con.c:287:static struct console sclp_console =
+- drivers/s390/char/sclp_vt220.c:873:static struct console sclp_vt220_console =
+- drivers/s390/char/con3270.c:581:static struct console con3270 = {
+- drivers/s390/char/con3215.c:889:static struct console con3215 = {
+- drivers/net/netconsole.c:86:static struct console netconsole_ext;
+- drivers/net/netconsole.c:881:static struct console netconsole_ext = {
+- drivers/net/netconsole.c:887:static struct console netconsole = {
+- drivers/tty/bfin_jtag_comm.c:315:static struct console bfin_jc_console = {
+- drivers/tty/bfin_jtag_comm.c:338:static struct console bfin_jc_early_console __initdata = {
+- drivers/tty/goldfish.c:47:	struct console console;
+- drivers/tty/metag_da.c:661:struct console dash_console = {
+- drivers/tty/ehv_bytechan.c:283:static struct console ehv_bc_console = {
+- drivers/tty/vt/vt.c:2645:static struct console vt_console_driver = {
+- drivers/tty/serial/bcm63xx_uart.c:753:static struct console bcm63xx_console = {
+- drivers/tty/serial/amba-pl010.c:685:static struct console amba_console = {
+- drivers/tty/serial/xilinx_uartps.c:1291:static struct console cdns_uart_console = {
+- drivers/tty/serial/st-asc.c:944:static struct console asc_console = {
+- drivers/tty/serial/sb1250-duart.c:895:static struct console sbd_console = {
+! drivers/tty/serial/8250/8250_core.c:672:static struct console univ8250_console = {
+- drivers/tty/serial/netx-serial.c:627:static struct console netx_console = {
+- drivers/tty/serial/sprd_serial.c:585:static struct console sprd_console = {
+- drivers/tty/serial/vr41xx_siu.c:814:static struct console siu_console = {
+- drivers/tty/serial/bfin_uart.c:1137:static struct console bfin_serial_console = {
+- drivers/tty/serial/bfin_uart.c:1178:static struct console bfin_early_serial_console __initdata = {
+- drivers/tty/serial/bfin_uart.c:1477:struct console __init *bfin_earlyserial_init(unsigned int port,
+- drivers/tty/serial/imx.c:1989:static struct console imx_console = {
+- drivers/tty/serial/mvebu-uart.c:518:static struct console mvebu_uart_console = {
+- drivers/tty/serial/digicolor-usart.c:438:static struct console digicolor_console = {
+- drivers/tty/serial/msm_serial.c:1705:static struct console msm_console = {
+- drivers/tty/serial/serial_ks8695.c:106:static struct console ks8695_console;
+- drivers/tty/serial/serial_ks8695.c:639:static struct console ks8695_console = {
+- drivers/tty/serial/mps2-uart.c:442:static struct console mps2_uart_console = {
+- drivers/tty/serial/meson_uart.c:547:static struct console meson_serial_console = {
+- drivers/tty/serial/21285.c:446:static struct console serial21285_console =
+- drivers/tty/serial/mpc52xx_uart.c:1684:static struct console mpc52xx_console = {
+- drivers/tty/serial/mcf.c:573:static struct console mcf_console = {
+- drivers/tty/serial/etraxfs-uart.c:114:static struct console cris_console = {
+- drivers/tty/serial/m32r_sio.c:1009:static struct console m32r_sio_console = {
+- drivers/tty/serial/pch_uart.c:1729:static struct console pch_console = {
+- drivers/tty/serial/sh-sci.c:2900:static struct console serial_console = {
+- drivers/tty/serial/sh-sci.c:2910:static struct console early_serial_console = {
+- drivers/tty/serial/fsl_lpuart.c:1898:static struct console lpuart_console = {
+- drivers/tty/serial/fsl_lpuart.c:1908:static struct console lpuart32_console = {
+- drivers/tty/serial/sa1100.c:807:static struct console sa1100_console = {
+- drivers/tty/serial/mxs-auart.c:1478:static struct console auart_console = {
+- drivers/tty/serial/ip22zilog.c:1057:static struct console ip22zilog_console = {
+- drivers/tty/serial/uartlite.c:508:static struct console ulite_console = {
+- drivers/tty/serial/clps711x.c:436:static struct console clps711x_console = {
+- drivers/tty/serial/samsung.c:1452:static struct console s3c24xx_serial_console;
+- drivers/tty/serial/samsung.c:2165:static struct console s3c24xx_serial_console = {
+- drivers/tty/serial/stm32-usart.c:986:static struct console stm32_console = {
+- drivers/tty/serial/serial_txx9.c:963:static struct console serial_txx9_console = {
+- drivers/tty/serial/pnx8xxx_uart.c:749:static struct console pnx8xxx_console = {
+- drivers/tty/serial/sn_console.c:754:static struct console sal_console = {
+- drivers/tty/serial/sn_console.c:1007:static struct console sal_console_early __initdata = {
+- drivers/tty/serial/mux.c:415:static struct console mux_console = {
+- drivers/tty/serial/efm32-uart.c:641:static struct console efm32_uart_console = {
+? drivers/tty/serial/earlycon.c:32:static struct console early_con = {
+- drivers/tty/serial/lpc32xx_hs.c:186:static struct console lpc32xx_hsuart_console = {
+- drivers/tty/serial/omap-serial.c:1373:static struct console serial_omap_console = {
+- drivers/tty/serial/zs.c:1222:static struct console zs_console = {
+- drivers/tty/serial/atmel_serial.c:204:static struct console atmel_console;
+- drivers/tty/serial/atmel_serial.c:2585:static struct console atmel_console = {
+- drivers/tty/serial/arc_uart.c:112:static struct console arc_console;
+- drivers/tty/serial/arc_uart.c:542:static struct console arc_console = {
+- drivers/tty/serial/kgdb_nmi.c:77:static struct console kgdb_nmi_console = {
+- drivers/tty/serial/altera_jtaguart.c:366:static struct console altera_jtaguart_console = {
+! drivers/tty/serial/amba-pl011.c:2412:static struct console amba_console = {
+- drivers/tty/serial/vt8500_serial.c:552:static struct console vt8500_console = {
+- drivers/tty/serial/pic32_uart.c:754:static struct console pic32_console = {
+- drivers/tty/serial/ar933x_uart.c:601:static struct console ar933x_uart_console = {
+- drivers/tty/serial/apbuart.c:509:static struct console grlib_apbuart_console = {
+- drivers/tty/serial/sunsab.c:948:static struct console sunsab_console = {
+- drivers/tty/serial/sunhv.c:514:static struct console sunhv_console = {
+- drivers/tty/serial/altera_uart.c:472:static struct console altera_uart_console = {
+- drivers/tty/serial/pmac_zilog.c:1817:static struct console pmz_console = {
+- drivers/tty/serial/lantiq.c:647:static struct console lqasc_console = {
+- drivers/tty/serial/cpm_uart/cpm_uart_core.c:1376:static struct console cpm_scc_uart_console = {
+- drivers/tty/serial/pxa.c:750:static struct console serial_pxa_console = {
+- drivers/tty/serial/mpsc.c:1793:static struct console mpsc_console = {
+- drivers/tty/serial/sirfsoc_uart.c:1136:static struct console sirfsoc_uart_console = {
+- drivers/tty/serial/dz.c:889:static struct console dz_console = {
+- drivers/tty/serial/sunsu.c:1370:static struct console sunsu_console = {
+- drivers/tty/serial/sunzilog.c:1265:static struct console sunzilog_console_ops = {
+- drivers/tty/serial/bfin_sport_uart.c:694:static struct console sport_uart_console = {
+- drivers/tty/amiserial.c:1835:static struct console sercons = {
+- drivers/tty/hvc/hvc_console.c:203:static struct console hvc_console = {
+- drivers/tty/hvc/hvsi.c:1167:static struct console hvsi_console = {
+- drivers/tty/hvc/hvc_xen.c:660:struct console xenboot_console = {
+- arch/sh/kernel/sh_bios.c:140:static struct console bios_console = {
+- arch/blackfin/kernel/shadow_console.c:44:static __initdata struct console early_shadow_console = {
+- arch/microblaze/kernel/early_printk.c:59:static struct console early_serial_uartlite_console = {
+- arch/microblaze/kernel/early_printk.c:103:static struct console early_serial_uart16550_console = {
+- arch/mips/sibyte/common/cfe_console.c:66:static struct console sb1250_cfe_cons = {
+- arch/mips/kernel/early_printk.c:29:static struct console early_console_prom = {
+- arch/mips/dec/prom/console.c:35:static struct console promcons __initdata = {
+- arch/mips/fw/arc/arc_con.c:32:static struct console arc_cons = {
+- arch/parisc/kernel/pdc_cons.c:57:static struct console pdc_cons;
+- arch/parisc/kernel/pdc_cons.c:221:static struct console pdc_cons = {
+- arch/tile/kernel/early_printk.c:37:static struct console early_hv_console = {
+- arch/cris/arch-v32/kernel/debugport.c:212:static struct console early_console_dev __initdata = {
+- arch/cris/arch-v10/kernel/debugport.c:471:static struct console ser_console = {
+- arch/cris/arch-v10/kernel/debugport.c:483:static struct console ser0_console = {
+- arch/cris/arch-v10/kernel/debugport.c:496:static struct console ser1_console = {
+- arch/cris/arch-v10/kernel/debugport.c:508:static struct console ser2_console = {
+- arch/cris/arch-v10/kernel/debugport.c:520:static struct console ser3_console = {
+- arch/ia64/hp/sim/hpsim_console.c:32:static struct console hpsim_cons = {
+- arch/arm/kernel/early_printk.c:32:static struct console early_console_dev = {
+- arch/sparc/kernel/setup_64.c:91:static struct console prom_early_console = {
+- arch/sparc/kernel/setup_32.c:115:static struct console prom_early_console = {
+- arch/sparc/kernel/btext.c:302:static struct console btext_console = {
+- arch/mn10300/kernel/mn10300-serial.c:78:static struct console mn10300_serial_console = {
+- arch/mn10300/kernel/gdb-stub.c:774:static struct console gdbstub_console = {
+- arch/alpha/kernel/srmcons.c:269:static struct console srmcons = {
+- arch/powerpc/kernel/udbg.c:151:static struct console udbg_console = {
+- arch/unicore32/kernel/early_printk.c:29:static struct console early_ocd_console = {
+- arch/m68k/sun3x/prom.c:87:static struct console sun3x_debug = {
+- arch/m68k/q40/config.c:57:static struct console q40_console_driver = {
+- arch/m68k/kernel/early_printk.c:32:static struct console early_console_instance = {
+- arch/m68k/amiga/config.c:109:static struct console amiga_console_driver = {
+- arch/m68k/emu/nfcon.c:55:static struct console nf_console = {
+- arch/m68k/atari/debug.c:28:static struct console atari_console_driver = {
+- arch/s390/kernel/early_printk.c:15:static struct console sclp_early_console = {
+- arch/xtensa/platforms/iss/console.c:254:static struct console sercons = {
+x arch/metag/kernel/setup.c:109:extern struct console dash_console;
+- arch/um/drivers/stdio_console.c:141:static struct console stdiocons = {
+- arch/um/drivers/ssl.c:141:static struct console ssl_cons = {
+- arch/um/drivers/stderr_console.c:24:static struct console stderr_console = {
+- arch/um/drivers/mconsole_kern.c:581:static struct console mc_console = { .name	= "mc",
+- arch/um/kernel/early_printk.c:19:static struct console early_console_dev = {
+- arch/frv/kernel/gdb-stub.c:649:static struct console gdbstub_console = {
+- arch/x86/platform/efi/early_printk.c:230:struct console early_efi_console = {
+- arch/x86/kernel/early_printk.c:72:static struct console early_vga_console = {
+- arch/x86/kernel/early_printk.c:313:static struct console early_serial_console = {
+x arch/x86/include/asm/efi.h:162:extern struct console early_efi_console;
+- kernel/debug/debug_core.c:803:static struct console kgdbcons = {
+- fs/pstore/platform.c:614:static struct console pstore_console = {
+x include/linux/usb/ehci-dbgp.h:47:extern struct console early_dbgp_console;
+x include/linux/console.h:137:struct console {
+x include/xen/hvc-console.h:4:extern struct console xenboot_console;
