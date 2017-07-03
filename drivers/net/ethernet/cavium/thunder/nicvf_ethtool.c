@@ -9,6 +9,8 @@
 /* ETHTOOL Support for VNIC_VF Device*/
 
 #include <linux/pci.h>
+#include <linux/net_tstamp.h>
+#include <linux/ptp_cavium.h>
 
 #include "nic_reg.h"
 #include "nic.h"
@@ -824,6 +826,30 @@ static int nicvf_set_pauseparam(struct net_device *dev,
 	return 0;
 }
 
+static int nicvf_get_ts_info(struct net_device *netdev,
+			     struct ethtool_ts_info *info)
+{
+	info->so_timestamping = SOF_TIMESTAMPING_TX_SOFTWARE |
+				SOF_TIMESTAMPING_RX_SOFTWARE |
+				SOF_TIMESTAMPING_SOFTWARE |
+				SOF_TIMESTAMPING_TX_HARDWARE |
+				SOF_TIMESTAMPING_RX_HARDWARE |
+				SOF_TIMESTAMPING_RAW_HARDWARE;
+
+	if (thunder_ptp_clock && thunder_ptp_clock->cavium_ptp_clock)
+		info->phc_index = ptp_clock_index(
+				thunder_ptp_clock->cavium_ptp_clock->ptp_clock);
+	else
+		info->phc_index = -1;
+
+	info->tx_types = (1 << HWTSTAMP_TX_OFF) | (1 << HWTSTAMP_TX_ON);
+
+	info->rx_filters = (1 << HWTSTAMP_FILTER_NONE) |
+			   (1 << HWTSTAMP_FILTER_ALL);
+
+	return 0;
+}
+
 static const struct ethtool_ops nicvf_ethtool_ops = {
 	.get_link		= nicvf_get_link,
 	.get_drvinfo		= nicvf_get_drvinfo,
@@ -847,7 +873,7 @@ static const struct ethtool_ops nicvf_ethtool_ops = {
 	.set_channels		= nicvf_set_channels,
 	.get_pauseparam         = nicvf_get_pauseparam,
 	.set_pauseparam         = nicvf_set_pauseparam,
-	.get_ts_info		= ethtool_op_get_ts_info,
+	.get_ts_info		= nicvf_get_ts_info,
 	.get_link_ksettings	= nicvf_get_link_ksettings,
 };
 
