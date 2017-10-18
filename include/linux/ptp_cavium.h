@@ -30,15 +30,4 @@ struct ptp_cavium_clock {
 	struct ptp_clock *ptp_clock;
 };
 
-// struct ptp_cavium_clock_info {
-// 	u64 (*reg_read)(struct ptp_cavium_clock_info *info, u64 offset);
-// 	void (*reg_write)(struct ptp_cavium_clock_info *info, u64 offset,
-// 			  u64 val);
-// 	void (*adjtime_clbck)(struct ptp_cavium_clock_info *info, s64 delta);
-// };
-
-// struct ptp_cavium_clock *ptp_cavium_register(struct ptp_cavium_clock_info *info,
-// 					     struct device *dev);
-// void ptp_cavium_unregister(struct ptp_cavium_clock *ptp_cavium_clock);
-
 #endif

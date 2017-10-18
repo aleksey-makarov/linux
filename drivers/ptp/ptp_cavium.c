@@ -292,7 +292,6 @@ static void ptp_cavium_remove(struct pci_dev *pdev)
 	struct ptp_cavium_clock *clock = pci_get_drvdata(pdev);
 	u64 clock_cfg;
 
-	/* stop PTP HW module */
 	clock_cfg = ptp_cavium_reg_read(clock, PTP_CLOCK_CFG);
 	clock_cfg &= ~PTP_CLOCK_CFG_PTP_EN;
 	ptp_cavium_reg_write(clock, PTP_CLOCK_CFG, clock_cfg);
