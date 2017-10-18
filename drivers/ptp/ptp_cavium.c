@@ -22,6 +22,8 @@
 #define PCI_DEVICE_ID_CAVIUM_PTP	0xA00C
 #define PCI_DEVICE_ID_CAVIUM_RST	0xA00E
 
+#define PCI_PTP_BAR_NO		0
+
 #define PTP_CLOCK_CFG		0xF00ULL
 #define  PTP_CLOCK_CFG_PTP_EN	(1 << 0)
 #define PTP_CLOCK_LO		0xF08ULL
@@ -31,6 +33,7 @@
 #define RST_BOOT		0x1600
 
 #define DEFAULT_SCLK_MUL	16
+#define CLOCK_BASE_RATE		50000000ULL
 
 /*
  * The Cavium PTP can *only* be found in SoCs containing the ThunderX ARM64 CPU
@@ -184,28 +187,32 @@ static u64 ptp_cavium_cc_read(const struct cyclecounter *cc)
 }
 
 /**
- * ptp_cavium_get_sclk_mul() - Get SCLK multiplier from RST block
+ * ptp_cavium_get_clock_rate() - Get clock_rateSCLK multiplier from RST block
  */
-static u64 ptp_cavium_get_sclk_mul(void)
+static u64 ptp_cavium_get_clock_rate(void)
 {
 	struct pci_dev *rstdev;
-	void __iomem *rst_base = NULL;
+	void __iomem *rst_base;
 	u64 sclk_mul = DEFAULT_SCLK_MUL;
 
 	rstdev = pci_get_device(PCI_VENDOR_ID_CAVIUM,
 				PCI_DEVICE_ID_CAVIUM_RST, NULL);
 	if (!rstdev)
-		return sclk_mul;
+		goto error;
 
 	rst_base = ioremap(pci_resource_start(rstdev, 0),
 			   pci_resource_len(rstdev, 0));
-	if (rst_base) {
-		sclk_mul = readq_relaxed(rst_base + RST_BOOT);
-		sclk_mul = (sclk_mul >> 33) & 0x3F;
-		iounmap(rst_base);
-	}
+	if (!rst_base)
+		goto error_put_device;
 
-	return sclk_mul;
+	sclk_mul = readq_relaxed(rst_base + RST_BOOT);
+	sclk_mul = (sclk_mul >> 33) & 0x3F;
+	iounmap(rst_base);
+
+error_put_device:
+	pci_dev_put(rstdev);
+error:
+	return sclk_mul * CLOCK_BASE_RATE;
 }
 
 static int ptp_cavium_probe(struct pci_dev *pdev,
@@ -223,32 +230,20 @@ static int ptp_cavium_probe(struct pci_dev *pdev,
 		return -ENOMEM;
 
 	clock->pdev = pdev;
-	pci_set_drvdata(pdev, clock);
 
-	err = pci_enable_device(pdev);
-	if (err) {
-		dev_err(dev, "Failed to enable PCI device 0x%x\n", err);
-		pci_set_drvdata(pdev, NULL);
+	err = pcim_enable_device(pdev);
+	if (err)
 		return err;
-	}
 
-	err = pci_request_regions(pdev, DRV_NAME);
-	if (err) {
-		dev_err(dev, "PCI request regions failed 0x%x\n", err);
-		goto err_disable_device;
-	}
+	err = pcim_iomap_regions(pdev, 1 << PCI_PTP_BAR_NO, pci_name(pdev));
+	if (err)
+		return err;
 
-	/* MAP configuration registers */
-	clock->reg_base = ioremap(pci_resource_start(pdev, 0),
-			pci_resource_len(pdev, 0));
-	if (!clock->reg_base) {
-		dev_err(dev, "Cannot map CSR memory space\n");
-		err = -ENOMEM;
-		goto err_release_regions;
-	}
+	clock->reg_base = pcim_iomap_table(pdev)[PCI_PTP_BAR_NO];
+
+	spin_lock_init(&clock->spin_lock);
 
 	cc = &clock->cycle_counter;
-
 	cc->read = ptp_cavium_cc_read;
 	cc->mask = CYCLECOUNTER_MASK(64);
 	cc->mult = 1;
@@ -257,7 +252,8 @@ static int ptp_cavium_probe(struct pci_dev *pdev,
 	timecounter_init(&clock->time_counter, &clock->cycle_counter,
 			 ktime_to_ns(ktime_get_real()));
 
-	spin_lock_init(&clock->spin_lock);
+	clock->clock_rate = ptp_cavium_get_clock_rate();
+
 	clock->ptp_info = (struct ptp_clock_info) {
 		.owner		= THIS_MODULE,
 		.name		= "ThunderX PTP",
@@ -272,46 +268,23 @@ static int ptp_cavium_probe(struct pci_dev *pdev,
 		.enable		= ptp_cavium_enable,
 	};
 
-	/* enable PTP HW module */
 	clock_cfg = ptp_cavium_reg_read(clock, PTP_CLOCK_CFG);
 	clock_cfg |= PTP_CLOCK_CFG_PTP_EN;
 	ptp_cavium_reg_write(clock, PTP_CLOCK_CFG, clock_cfg);
 
-	/* The hardware adds the clock compensation value to the PTP clock on
-	 * every coprocessor clock cycle. Typical convention is tha it represent
-	 * number of nanosecond betwen each cycle. In this convention
-	 * Compensation value is in 64 bit fixed-point representation where
-	 * upper 32 bits are number of nanoseconds and lower is fractions of
-	 * nanosecond. To calculate it we use 64bit fixed point arithmetic on
-	 * following formula comp = t = 1/Hz. Then we use endian independent
-	 * structire definition to write data to PTP register */
 	clock_comp = ((u64)1000000000ull << 32) / clock->clock_rate;
 	ptp_cavium_reg_write(clock, PTP_CLOCK_COMP, clock_comp);
 
-	clock->clock_rate = ptp_cavium_get_sclk_mul() * 50000000ull,
-
-	/* register PTP clock in kernel */
 	clock->ptp_clock = ptp_clock_register(&clock->ptp_info, dev);
-	if (IS_ERR(clock->ptp_clock))
-		goto error;
+	if (IS_ERR(clock->ptp_clock)) {
+		clock_cfg = ptp_cavium_reg_read(clock, PTP_CLOCK_CFG);
+		clock_cfg &= ~PTP_CLOCK_CFG_PTP_EN;
+		ptp_cavium_reg_write(clock, PTP_CLOCK_CFG, clock_cfg);
+		return PTR_ERR(clock->ptp_clock);
+	}
 
+	pci_set_drvdata(pdev, clock);
 	return 0;
-
-error:
-	/* stop PTP HW module */
-	clock_cfg = ptp_cavium_reg_read(clock, PTP_CLOCK_CFG);
-	clock_cfg &= ~PTP_CLOCK_CFG_PTP_EN;
-	ptp_cavium_reg_write(clock, PTP_CLOCK_CFG, clock_cfg);
-
-	devm_kfree(dev, clock);
-err_release_regions:
-	pci_release_regions(pdev);
-err_disable_device:
-	pci_disable_device(pdev);
-	pci_set_drvdata(pdev, NULL);
-
-	devm_kfree(dev, clock);
-	return err;
 }
 
 static void ptp_cavium_remove(struct pci_dev *pdev)
@@ -326,9 +299,6 @@ static void ptp_cavium_remove(struct pci_dev *pdev)
 
 	ptp_clock_unregister(clock->ptp_clock);
 
-	iounmap(clock->reg_base);
-	pci_release_regions(pdev);
-	pci_disable_device(pdev);
 	pci_set_drvdata(pdev, NULL);
 }
 

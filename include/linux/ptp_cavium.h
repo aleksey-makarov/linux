@@ -18,17 +18,16 @@
 
 struct ptp_cavium_clock {
 
-	const char *name;
 	struct pci_dev *pdev;
 	void __iomem *reg_base;
-
-	struct ptp_clock *ptp_clock;
-	struct ptp_clock_info ptp_info;
 
 	spinlock_t spin_lock;
 	struct cyclecounter cycle_counter;
 	struct timecounter time_counter;
 	u32 clock_rate;
+
+	struct ptp_clock_info ptp_info;
+	struct ptp_clock *ptp_clock;
 };
 
 // struct ptp_cavium_clock_info {
