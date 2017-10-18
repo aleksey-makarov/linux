@@ -17,9 +17,9 @@
 #include <linux/ptp_cavium.h>
 #include <linux/pci.h>
 
-#define DRV_NAME	"Cavium Thunder PTP Driver"
+#define DRV_NAME	"Cavium PTP Driver"
 
-#define PCI_DEVICE_ID_THUNDER_PTP	0xA00C
+#define PCI_DEVICE_ID_CAVIUM_PTP	0xA00C
 #define PCI_DEVICE_ID_CAVIUM_RST	0xA00E
 
 #define PTP_CLOCK_CFG		0xF00ULL
@@ -28,7 +28,12 @@
 #define PTP_CLOCK_HI		0xF10ULL
 #define PTP_CLOCK_COMP		0xF18ULL
 
-/* The Cavium PTP can *only* be found in SoCs containing the ThunderX ARM64 CPU
+#define RST_BOOT		0x1600
+
+#define DEFAULT_SCLK_MUL	16
+
+/*
+ * The Cavium PTP can *only* be found in SoCs containing the ThunderX ARM64 CPU
  * implementation.  All accesses to the device registers on this platform are
  * implicitly strongly ordered with respect to memory accesses. So
  * writeq_relaxed() and readq_relaxed() are safe to use with no memory barriers
@@ -66,10 +71,11 @@ static int ptp_cavium_adjfreq(struct ptp_clock_info *ptp_info, s32 ppb)
 		ppb = -ppb;
 	}
 
-	/* The hardware adds the clock compensation value to the PTP clock on
+	/*
+	 * The hardware adds the clock compensation value to the PTP clock on
 	 * every coprocessor clock cycle. Typical convention is that it
 	 * represent number of nanosecond betwen each cycle. In this convention
-	 * Compensation value is in 64 bit fixed-point representation where
+	 * compensation value is in 64 bit fixed-point representation where
 	 * upper 32 bits are number of nanoseconds and lower is fractions of
 	 * nanosecond.
 	 * The ppb represent the ratio in "parts per bilion" by which the
@@ -78,7 +84,8 @@ static int ptp_cavium_adjfreq(struct ptp_clock_info *ptp_info, s32 ppb)
 	 * arithmetic on following formula comp = tbase + tbase*ppb/1G where
 	 * tbase is the basic compensation value calculated initialy in
 	 * ptp_cavium_init() -> tbase = 1/Hz. Then we use endian independent
-	 * structure definition to write data to PTP register */
+	 * structure definition to write data to PTP register
+	 */
 	comp = ((u64)1000000000ull << 32) / clock->clock_rate;
 	adj = comp * ppb;
 	adj = div_u64(adj, 1000000000ull);
@@ -176,78 +183,10 @@ static u64 ptp_cavium_cc_read(const struct cyclecounter *cc)
 	return ptp_cavium_reg_read(clock, PTP_CLOCK_HI);
 }
 
-#if 0
-struct ptp_cavium_clock* ptp_cavium_register(struct ptp_cavium_clock_info *info,
-					     struct device *dev)
-{
-	struct ptp_cavium_clock *clock = NULL;
-	struct cyclecounter *cc;
-	u64 clock_cfg;
-	u64 clock_comp;
-
-	clock = devm_kzalloc(dev, sizeof(*clock), GFP_KERNEL);
-	if (!clock)
-		return NULL;
-
-	return clock;
-
-error:
-	/* stop PTP HW module */
-	clock_cfg = info->reg_read(info, PTP_CLOCK_CFG);
-	clock_cfg &= ~PTP_CLOCK_CFG_PTP_EN;
-	info->reg_write(info, PTP_CLOCK_CFG, clock_cfg);
-
-	devm_kfree(dev, clock);
-	return NULL;
-}
-EXPORT_SYMBOL(ptp_cavium_register);
-
-void ptp_cavium_unregister(struct ptp_cavium_clock *clock)
-{
-}
-EXPORT_SYMBOL(ptp_cavium_unregister);
-#endif
-
-/* ------------------------------------------------------------------------ */
-
-// #define NSEC_PER_SEC     1000000000L
-// #define DRV_VERSION      "1.0"
-//
-
-//
-// struct thunder_ptp_clock *thunder_ptp_clock;
-// EXPORT_SYMBOL(thunder_ptp_clock);
-
-/*
- * Register access functions
- */
-
-
-// static void thunder_ptp_adjtime(struct cavium_ptp_clock_info *info,
-// 				   s64 delta)
-// {
-// 	struct thunder_ptp_clock *thunder_ptp_clock =
-// 		container_of(info, struct thunder_ptp_clock, cavium_ptp_info);
-//
-// 	thunder_ptp_clock->ptp_adjust = delta;
-// }
-//
-// s64 thunder_get_adjtime(void)
-// {
-// 	if (!thunder_ptp_clock)
-// 		return 0;
-//
-// 	return thunder_ptp_clock->ptp_adjust;
-// }
-// EXPORT_SYMBOL(thunder_get_adjtime);
-
-#define DEFAULT_SCLK_MUL	 16
-#define RST_BOOT		 0x1600
-
 /**
- * cavium_ptp_get_sclk_mul() - Get SCLK multiplier from RST block
+ * ptp_cavium_get_sclk_mul() - Get SCLK multiplier from RST block
  */
-static u64 cavium_ptp_get_sclk_mul(void)
+static u64 ptp_cavium_get_sclk_mul(void)
 {
 	struct pci_dev *rstdev;
 	void __iomem *rst_base = NULL;
@@ -269,9 +208,7 @@ static u64 cavium_ptp_get_sclk_mul(void)
 	return sclk_mul;
 }
 
-/* module operations */
-
-static int cavium_ptp_probe(struct pci_dev *pdev,
+static int ptp_cavium_probe(struct pci_dev *pdev,
 			    const struct pci_device_id *ent)
 {
 	struct device *dev = &pdev->dev;
@@ -351,7 +288,7 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	clock_comp = ((u64)1000000000ull << 32) / clock->clock_rate;
 	ptp_cavium_reg_write(clock, PTP_CLOCK_COMP, clock_comp);
 
-	clock->clock_rate = cavium_ptp_get_sclk_mul() * 50000000ull,
+	clock->clock_rate = ptp_cavium_get_sclk_mul() * 50000000ull,
 
 	/* register PTP clock in kernel */
 	clock->ptp_clock = ptp_clock_register(&clock->ptp_info, dev);
@@ -361,6 +298,12 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	return 0;
 
 error:
+	/* stop PTP HW module */
+	clock_cfg = ptp_cavium_reg_read(clock, PTP_CLOCK_CFG);
+	clock_cfg &= ~PTP_CLOCK_CFG_PTP_EN;
+	ptp_cavium_reg_write(clock, PTP_CLOCK_CFG, clock_cfg);
+
+	devm_kfree(dev, clock);
 err_release_regions:
 	pci_release_regions(pdev);
 err_disable_device:
@@ -371,7 +314,7 @@ err_disable_device:
 	return err;
 }
 
-static void cavium_ptp_remove(struct pci_dev *pdev)
+static void ptp_cavium_remove(struct pci_dev *pdev)
 {
 	struct ptp_cavium_clock *clock = pci_get_drvdata(pdev);
 	u64 clock_cfg;
@@ -389,26 +332,26 @@ static void cavium_ptp_remove(struct pci_dev *pdev)
 	pci_set_drvdata(pdev, NULL);
 }
 
-static const struct pci_device_id cavium_ptp_id_table[] = {
-	{ PCI_DEVICE(PCI_VENDOR_ID_CAVIUM, PCI_DEVICE_ID_THUNDER_PTP) },
+static const struct pci_device_id ptp_cavium_id_table[] = {
+	{ PCI_DEVICE(PCI_VENDOR_ID_CAVIUM, PCI_DEVICE_ID_CAVIUM_PTP) },
 	{ 0, }
 };
 
-static struct pci_driver cavium_ptp_driver = {
+static struct pci_driver ptp_cavium_driver = {
 	.name = DRV_NAME,
-	.id_table = cavium_ptp_id_table,
-	.probe = cavium_ptp_probe,
-	.remove = cavium_ptp_remove,
+	.id_table = ptp_cavium_id_table,
+	.probe = ptp_cavium_probe,
+	.remove = ptp_cavium_remove,
 };
 
 static int __init ptp_cavium_init_module(void)
 {
-	return pci_register_driver(&cavium_ptp_driver);
+	return pci_register_driver(&ptp_cavium_driver);
 }
 
 static void __exit ptp_cavium_cleanup_module(void)
 {
-	pci_unregister_driver(&cavium_ptp_driver);
+	pci_unregister_driver(&ptp_cavium_driver);
 }
 
 module_init(ptp_cavium_init_module);
