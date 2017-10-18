@@ -30,4 +30,6 @@ struct ptp_cavium_clock {
 	struct ptp_clock *ptp_clock;
 };
 
+struct ptp_cavium_clock *ptp_cavium_clock_get(void);
+
 #endif

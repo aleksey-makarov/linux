@@ -30,18 +30,19 @@
 #define PTP_CLOCK_HI		0xF10ULL
 #define PTP_CLOCK_COMP		0xF18ULL
 
-#define RST_BOOT		0x1600
+#define RST_BOOT		0x1600ULL
 
 #define DEFAULT_SCLK_MUL	16
 #define CLOCK_BASE_RATE		50000000ULL
 
 /*
- * The Cavium PTP can *only* be found in SoCs containing the ThunderX ARM64 CPU
- * implementation.  All accesses to the device registers on this platform are
- * implicitly strongly ordered with respect to memory accesses. So
- * writeq_relaxed() and readq_relaxed() are safe to use with no memory barriers
- * in this driver.  The readq()/writeq() functions add explicit ordering
- * operation which in this case are redundant, and only add overhead.
+ * The Cavium PTP can *only* be found in SoCs containing the ThunderX
+ * ARM64 CPU implementation.  All accesses to the deviceregisters on this
+ * platform are implicitly strongly ordered with respect to memory
+ * accesses. So writeq_relaxed() and readq_relaxed() are safe to use with
+ * no memory barriers in this driver.  The readq()/writeq() functions add
+ * explicit ordering operation which in this case are redundant, and only
+ * add overhead.
  */
 
 static u64 ptp_cavium_reg_read(struct ptp_cavium_clock *clock, u64 offset)
@@ -49,10 +50,15 @@ static u64 ptp_cavium_reg_read(struct ptp_cavium_clock *clock, u64 offset)
 	return readq_relaxed(clock->reg_base + offset);
 }
 
-static void ptp_cavium_reg_write(struct ptp_cavium_clock *clock, u64 offset,
-				 u64 val)
+static void ptp_cavium_reg_write(struct ptp_cavium_clock *clock,
+				 u64 offset, u64 val)
 {
 	writeq_relaxed(val, clock->reg_base + offset);
+}
+
+struct ptp_cavium_clock *ptp_cavium_clock_get(void)
+{
+	return ERR_PTR(-EPROBE_DEFER);
 }
 
 /**
@@ -75,19 +81,19 @@ static int ptp_cavium_adjfreq(struct ptp_clock_info *ptp_info, s32 ppb)
 	}
 
 	/*
-	 * The hardware adds the clock compensation value to the PTP clock on
-	 * every coprocessor clock cycle. Typical convention is that it
-	 * represent number of nanosecond betwen each cycle. In this convention
-	 * compensation value is in 64 bit fixed-point representation where
-	 * upper 32 bits are number of nanoseconds and lower is fractions of
-	 * nanosecond.
+	 * The hardware adds the clock compensation value to the PTP clock
+	 * on every coprocessor clock cycle. Typical convention is that it
+	 * represent number of nanosecond betwen each cycle. In this
+	 * convention compensation value is in 64 bit fixed-point
+	 * representation where upper 32 bits are number of nanoseconds
+	 * and lower is fractions of nanosecond.
 	 * The ppb represent the ratio in "parts per bilion" by which the
 	 * compensation value should be corrected.
 	 * To calculate new compenstation value we use 64bit fixed point
-	 * arithmetic on following formula comp = tbase + tbase*ppb/1G where
-	 * tbase is the basic compensation value calculated initialy in
-	 * ptp_cavium_init() -> tbase = 1/Hz. Then we use endian independent
-	 * structure definition to write data to PTP register
+	 * arithmetic on following formula comp = tbase + tbase * ppb / 1G
+	 * where tbase is the basic compensation value calculated initialy
+	 * in ptp_cavium_init() -> tbase = 1/Hz. Then we use endian
+	 * independent structure definition to write data to PTP register.
 	 */
 	comp = ((u64)1000000000ull << 32) / clock->clock_rate;
 	adj = comp * ppb;
@@ -123,7 +129,7 @@ static int ptp_cavium_adjtime(struct ptp_clock_info *ptp_info, s64 delta)
 }
 
 /**
- * ptp_cavium_gettime() - Get hardware clock time, including any adjustment
+ * ptp_cavium_gettime() - Get hardware clock time with adjustment
  * @ptp: PTP clock info
  * @ts:  timespec
  */
@@ -160,7 +166,8 @@ static int ptp_cavium_settime(struct ptp_clock_info *ptp_info,
 	nsec = timespec64_to_ns(ts);
 
 	spin_lock_irqsave(&clock->spin_lock, flags);
-	timecounter_init(&clock->time_counter, &clock->cycle_counter, nsec);
+	timecounter_init(&clock->time_counter, &clock->cycle_counter,
+			 nsec);
 	spin_unlock_irqrestore(&clock->spin_lock, flags);
 
 	return 0;
@@ -187,7 +194,7 @@ static u64 ptp_cavium_cc_read(const struct cyclecounter *cc)
 }
 
 /**
- * ptp_cavium_get_clock_rate() - Get clock_rateSCLK multiplier from RST block
+ * ptp_cavium_get_clock_rate() - Get clock rate from RST block
  */
 static u64 ptp_cavium_get_clock_rate(void)
 {
@@ -235,7 +242,8 @@ static int ptp_cavium_probe(struct pci_dev *pdev,
 	if (err)
 		return err;
 
-	err = pcim_iomap_regions(pdev, 1 << PCI_PTP_BAR_NO, pci_name(pdev));
+	err = pcim_iomap_regions(pdev, 1 << PCI_PTP_BAR_NO,
+				 pci_name(pdev));
 	if (err)
 		return err;
 
