@@ -56,13 +56,23 @@ static void ptp_cavium_reg_write(struct ptp_cavium_clock *clock,
 	writeq_relaxed(val, clock->reg_base + offset);
 }
 
-static struct ptp_cavium_clock *ptp_cavium_clock_singleton;
-
 struct ptp_cavium_clock *ptp_cavium_clock_get(void)
 {
-	if (ptp_cavium_clock_singleton)
-		return ptp_cavium_clock_singleton;
-	return ERR_PTR(-EPROBE_DEFER);
+	struct pci_dev *ptpdev;
+	struct ptp_cavium_clock *clock;
+
+	ptpdev = pci_get_device(PCI_VENDOR_ID_CAVIUM,
+				PCI_DEVICE_ID_CAVIUM_RST, NULL);
+	if (!ptpdev)
+		return ERR_PTR(-ENODEV);
+
+	clock = pci_get_drvdata(ptpdev);
+	if (!clock)
+		clock = ERR_PTR(-EPROBE_DEFER);
+
+	pci_dev_put(ptpdev);
+
+	return clock;
 }
 EXPORT_SYMBOL(ptp_cavium_clock_get);
 
