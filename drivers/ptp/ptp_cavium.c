@@ -62,7 +62,7 @@ struct ptp_cavium_clock *ptp_cavium_clock_get(void)
 	struct ptp_cavium_clock *clock;
 
 	ptpdev = pci_get_device(PCI_VENDOR_ID_CAVIUM,
-				PCI_DEVICE_ID_CAVIUM_RST, NULL);
+				PCI_DEVICE_ID_CAVIUM_PTP, NULL);
 	if (!ptpdev)
 		return ERR_PTR(-ENODEV);
 
