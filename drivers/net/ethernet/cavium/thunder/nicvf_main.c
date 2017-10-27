@@ -23,6 +23,8 @@
 #include <linux/net_tstamp.h>
 #include <linux/ptp_cavium.h>
 
+#include <linux/mtrace.h>
+
 #include "nic_reg.h"
 #include "nic.h"
 #include "nicvf_queues.h"
@@ -1937,13 +1939,21 @@ static int nicvf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	u16    sdevid;
 	struct ptp_cavium_clock *ptp_clock;
 
+	MTRACE("+");
+
 	ptp_clock = ptp_cavium_clock_get();
 	if (IS_ERR(ptp_clock)) {
-		if (PTR_ERR(ptp_clock) == -ENODEV)
+		MTRACE("ptp err");
+		if (PTR_ERR(ptp_clock) == -ENODEV) {
+			MTRACE("ptp ENODEV");
 			ptp_clock = NULL;
-		else
+		} else {
+			MTRACE("! ptp");
 			return PTR_ERR(ptp_clock);
+		}
 	}
+
+	MTRACE("ptp done");
 
 	err = pci_enable_device(pdev);
 	if (err) {
