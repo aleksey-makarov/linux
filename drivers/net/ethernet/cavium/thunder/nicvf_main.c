@@ -1938,7 +1938,9 @@ static int nicvf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	struct ptp_cavium_clock *ptp_clock;
 
 	ptp_clock = ptp_cavium_clock_get();
-	if (IS_ERR(ptp_clock))
+	if (IS_ERR(ptp_clock) && PTR_ERR(ptp_clock) == -ENODEV)
+		ptp_clock = NULL;
+	else
 		return PTR_ERR(ptp_clock);
 
 	err = pci_enable_device(pdev);
