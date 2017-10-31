@@ -1,0 +1,17 @@
+net: thunderx: add support for PTP clock
+
+This series adds support for IEEE 1588 Precision Time Protocol
+to Cavium ethernet driver.
+
+First patch adds support for the Reset and Fuses IP (RST) found
+on Cavium processors.  RST is a PCI device that provides a set
+of registers that control reset, initialization and fuse functions.
+It is used to find clock rate for the input to the PTP block.
+
+Second patch adds support for the Precision Time Protocol Clocks and
+Timestamping coprocessor (PTP) found on Cavium processors.
+It registers a new PTP clock in the PTP core and provides functions
+to use the counter in BGX, TNS, GTI, and NIC blocks.
+
+Third patch introduces support for the PTP protocol to the
+Cavium ThunderX ethernet driver.
