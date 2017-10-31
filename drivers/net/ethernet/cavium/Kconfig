@@ -50,6 +50,16 @@ config	THUNDER_NIC_RGX
 	  This driver supports configuring XCV block of RGX interface
 	  present on CN81XX chip.
 
+config CAVIUM_RST
+	tristate "Cavium Reset and Fuses (RST)"
+	depends on 64BIT
+	default y
+	---help---
+	  This driver adds support for the Reset and Fuses IP (RST)
+	  found on Cavium processors.
+	  RST is a PCI device that provides a set of registers
+	  that control reset, initialization and fuse functions.
+
 config LIQUIDIO
 	tristate "Cavium LiquidIO support"
 	depends on 64BIT

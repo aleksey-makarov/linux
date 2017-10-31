@@ -6,6 +6,7 @@ obj-$(CONFIG_THUNDER_NIC_RGX) += thunder_xcv.o
 obj-$(CONFIG_THUNDER_NIC_BGX) += thunder_bgx.o
 obj-$(CONFIG_THUNDER_NIC_PF) += nicpf.o
 obj-$(CONFIG_THUNDER_NIC_VF) += nicvf.o
+obj-$(CONFIG_CAVIUM_RST) += cavium_rst.o
 
 nicpf-y := nic_main.o
 nicvf-y := nicvf_main.o nicvf_queues.o
