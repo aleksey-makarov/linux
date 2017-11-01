@@ -28,6 +28,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/pinctrl/devinfo.h>
 
+#include <linux/mtrace.h>
+
 #include "base.h"
 #include "power/power.h"
 
@@ -385,6 +387,7 @@ re_probe:
 	if (ret)
 		goto pinctrl_bind_failed;
 
+	MTRACE();
 	ret = dma_configure(dev);
 	if (ret)
 		goto dma_failed;
@@ -542,6 +545,8 @@ EXPORT_SYMBOL_GPL(wait_for_device_probe);
 int driver_probe_device(struct device_driver *drv, struct device *dev)
 {
 	int ret = 0;
+
+	MTRACE();
 
 	if (!device_is_registered(dev))
 		return -ENODEV;

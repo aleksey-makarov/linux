@@ -13,6 +13,8 @@
 #include <linux/platform_device.h>
 #include <linux/amba/bus.h>
 
+#include <linux/mtrace.h>
+
 #include <asm/errno.h>
 #include "of_private.h"
 
@@ -166,6 +168,7 @@ int of_dma_configure(struct device *dev, struct device_node *np)
 	dev_dbg(dev, "device is%sbehind an iommu\n",
 		iommu ? " " : " not ");
 
+	MTRACE("device: %s, iommu: %s", dev_name(dev), iommu? "yes" : "no");
 	arch_setup_dma_ops(dev, dma_addr, size, iommu, coherent);
 
 	return 0;

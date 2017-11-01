@@ -22,6 +22,8 @@
 #include <linux/filter.h>
 #include <linux/net_tstamp.h>
 
+#include <linux/mtrace.h>
+
 #include "nic_reg.h"
 #include "nic.h"
 #include "nicvf_queues.h"
@@ -1942,18 +1944,23 @@ static int nicvf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	u16    sdevid;
 	struct cavium_ptp *ptp_clock;
 
+	MTRACE("+ (device: %s)", dev_name(dev));
+
 	ptp_clock = cavium_ptp_get();
 	if (IS_ERR(ptp_clock)) {
 		if (PTR_ERR(ptp_clock) == -ENODEV)
 			/* In virtualized environment we proceed without ptp */
 			ptp_clock = NULL;
-		else
+		else {
+			MTRACE("! ptp error");
 			return PTR_ERR(ptp_clock);
+		}
 	}
 
 	err = pci_enable_device(pdev);
 	if (err) {
 		dev_err(dev, "Failed to enable PCI device\n");
+		MTRACE("!");
 		return err;
 	}
 
@@ -2076,6 +2083,7 @@ static int nicvf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	nicvf_set_ethtool_ops(netdev);
 
+	MTRACE("-");
 	return 0;
 
 err_unregister_interrupts:
@@ -2089,6 +2097,7 @@ err_release_regions:
 	pci_release_regions(pdev);
 err_disable_device:
 	pci_disable_device(pdev);
+	MTRACE("!");
 	return err;
 }
 

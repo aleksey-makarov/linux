@@ -15,6 +15,8 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 
+#include <linux/mtrace.h>
+
 /*
  * Managed DMA API
  */
@@ -351,6 +353,7 @@ int dma_configure(struct device *dev)
 	}
 
 	if (dma_dev->of_node) {
+		MTRACE();
 		ret = of_dma_configure(dev, dma_dev->of_node);
 	} else if (has_acpi_companion(dma_dev)) {
 		attr = acpi_get_dma_attr(to_acpi_device_node(dma_dev->fwnode));
