@@ -32,6 +32,8 @@
 
 #include <asm/cacheflush.h>
 
+#include <linux/mtrace.h>
+
 static int swiotlb __ro_after_init;
 
 static pgprot_t __get_dma_pgprot(unsigned long attrs, pgprot_t prot,
@@ -890,12 +892,17 @@ static void __iommu_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 	 */
 	domain = iommu_get_domain_for_dev(dev);
 
-	if (!domain)
+	MTRACE();
+	if (!domain) {
+		MTRACE("no domain");
 		goto out_err;
+	}
 
 	if (domain->type == IOMMU_DOMAIN_DMA) {
-		if (iommu_dma_init_domain(domain, dma_base, size, dev))
+		if (iommu_dma_init_domain(domain, dma_base, size, dev)) {
+			MTRACE();
 			goto out_err;
+		}
 
 		dev->dma_ops = &iommu_dma_ops;
 	}
@@ -905,6 +912,12 @@ static void __iommu_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 out_err:
 	 pr_warn("Failed to set up IOMMU for device %s; retaining platform DMA ops\n",
 		 dev_name(dev));
+	{
+		static bool done = false;
+		if (!done)
+			dump_stack();
+		done = true;
+	}
 }
 
 void arch_teardown_dma_ops(struct device *dev)
@@ -927,6 +940,7 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 		dev->dma_ops = &swiotlb_dma_ops;
 
 	dev->archdata.dma_coherent = coherent;
+	MTRACE();
 	__iommu_setup_dma_ops(dev, dma_base, size, iommu);
 
 #ifdef CONFIG_XEN
