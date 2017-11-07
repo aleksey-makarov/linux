@@ -16,6 +16,8 @@
 #include <linux/timecounter.h>
 #include <linux/pci.h>
 
+#include <linux/mtrace.h>
+
 #include "cavium_ptp.h"
 
 #define DRV_NAME	"Cavium PTP Driver"
@@ -50,6 +52,7 @@ static u64 ptp_cavium_clock_get(void)
 	if (!base)
 		goto error_put_pdev;
 
+	MTRACE("getting the multiplier value");
 	ret = CLOCK_BASE_RATE * ((readq_relaxed(base + RST_BOOT) >> 33) & 0x3f);
 
 	iounmap(base);
@@ -246,6 +249,8 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	u64 clock_comp;
 	int err;
 
+	MTRACE("+");
+
 	clock = devm_kzalloc(dev, sizeof(*clock), GFP_KERNEL);
 	if (!clock)
 		return -ENOMEM;
@@ -274,6 +279,7 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 			 ktime_to_ns(ktime_get_real()));
 
 	clock->clock_rate = ptp_cavium_clock_get();
+	MTRACE("rate: 0x%x", clock->clock_rate);
 
 	clock->ptp_info = (struct ptp_clock_info) {
 		.owner		= THIS_MODULE,
