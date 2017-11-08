@@ -361,17 +361,30 @@ static void nic_set_lmac_vf_mapping(struct nicpf *nic)
 	}
 }
 
-static void nic_free_lmacmem(struct nicpf *nic)
+/* Allocate memory for LMAC tracking elements */
+static int nic_allocate_lmacmem(struct nicpf *nic)
 {
-	kfree(nic->vf_lmac_map);
-	kfree(nic->link);
-	kfree(nic->duplex);
-	kfree(nic->speed);
+	u8 max_lmac = nic->hw->bgx_cnt * MAX_LMAC_PER_BGX;
+
+	nic->vf_lmac_map = devm_kmalloc_array(max_lmac, sizeof(u8), GFP_KERNEL);
+	if (!nic->vf_lmac_map)
+		return -ENOMEM;
+
+	nic->link = devm_kmalloc_array(max_lmac, sizeof(u8), GFP_KERNEL);
+	if (!nic->link)
+		return -ENOMEM;
+
+	nic->duplex = devm_kmalloc_array(max_lmac, sizeof(u8), GFP_KERNEL);
+	if (!nic->duplex)
+		return -ENOMEM;
+
+	nic->speed = devm_kmalloc_array(max_lmac, sizeof(u32), GFP_KERNEL);
+	if (!nic->speed)
+		return -ENOMEM;
 }
 
-static int nic_get_hw_info(struct nicpf *nic)
+static void nic_get_hw_info(struct nicpf *nic)
 {
-	u8 max_lmac;
 	u16 sdevid;
 	struct hw_info *hw = nic->hw;
 
@@ -419,26 +432,6 @@ static int nic_get_hw_info(struct nicpf *nic)
 		break;
 	}
 	hw->tl4_cnt = MAX_QUEUES_PER_QSET * pci_sriov_get_totalvfs(nic->pdev);
-
-	/* Allocate memory for LMAC tracking elements */
-	max_lmac = hw->bgx_cnt * MAX_LMAC_PER_BGX;
-	nic->vf_lmac_map = kmalloc_array(max_lmac, sizeof(u8), GFP_KERNEL);
-	if (!nic->vf_lmac_map)
-		goto error;
-	nic->link = kmalloc_array(max_lmac, sizeof(u8), GFP_KERNEL);
-	if (!nic->link)
-		goto error;
-	nic->duplex = kmalloc_array(max_lmac, sizeof(u8), GFP_KERNEL);
-	if (!nic->duplex)
-		goto error;
-	nic->speed = kmalloc_array(max_lmac, sizeof(u32), GFP_KERNEL);
-	if (!nic->speed)
-		goto error;
-	return 0;
-
-error:
-	nic_free_lmacmem(nic);
-	return -ENOMEM;
 }
 
 #define BGX0_BLOCK 8
@@ -1334,21 +1327,16 @@ static int nic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		return -ENOMEM;
 
 	nic->hw = devm_kzalloc(dev, sizeof(struct hw_info), GFP_KERNEL);
-	if (!nic->hw) {
-		devm_kfree(dev, nic);
+	if (!nic->hw)
 		return -ENOMEM;
-	}
-
-	pci_set_drvdata(pdev, nic);
 
 	nic->pdev = pdev;
 
-	err = pci_enable_device(pdev);
-	if (err) {
-		dev_err(dev, "Failed to enable PCI device\n");
-		pci_set_drvdata(pdev, NULL);
+	err = pcim_enable_device(pdev);
+	if (err)
 		return err;
-	}
+
+	pci_set_drvdata(pdev, nic);
 
 	err = pci_request_regions(pdev, DRV_NAME);
 	if (err) {
@@ -1377,6 +1365,8 @@ static int nic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 
 	nic->node = nic_get_node_id(pdev);
+
+	err = nic_allocate_lmacmem();
 
 	/* Initialize hardware */
 	err = nic_init_hw(nic);
