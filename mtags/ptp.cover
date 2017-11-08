@@ -1,0 +1,19 @@
+net: thunderx: add support for PTP clock
+
+This series adds support for IEEE 1588 Precision Time Protocol
+to Cavium ethernet driver.
+
+The first patch adds support for the Precision Time Protocol Clocks and
+Timestamping coprocessor (PTP) found on Cavium processors.
+It registers a new PTP clock in the PTP core and provides functions
+to use the counter in BGX, TNS, GTI, and NIC blocks.
+
+The second patch introduces support for the PTP protocol to the
+Cavium ThunderX ethernet driver.
+
+v2:
+- use readq()/writeq() in place of cavium_ptp_reg_read()/cavium_ptp_reg_write(),
+  don't use readq_relaxed()/writeq_relaxed() (David Daney)
+
+v1:
+  https://lkml.kernel.org/r/20171107190704.15458-1-aleksey.makarov@cavium.com
