@@ -1,0 +1,43 @@
+net: thunderx: add support for PTP clock
+
+This series adds support for IEEE 1588 Precision Time Protocol
+to Cavium ethernet driver.
+
+The first patch adds support for the Precision Time Protocol Clocks and
+Timestamping coprocessor (PTP) found on Cavium processors.
+It registers a new PTP clock in the PTP core and provides functions
+to use the counter in BGX, TNS, GTI, and NIC blocks.
+
+The second patch introduces support for the PTP protocol to the
+Cavium ThunderX ethernet driver.
+
+v6:
+- check if ptp_clock_register() returns NULL (Richard Cochran)
+- fix doc comment for cavium_ptp_enable() (Richard Cochran)
+- fix a function call formatting; use defined constant (Richard Cochran)
+- add comments for `tx_ptp_skbs` and `ptp_skb` (Richard Cochran)
+- use adjfine() instead of adjfreq() (Richard Cochran)
+- add Acked-by: Philippe Ombredanne <pombredanne@nexb.com>
+
+v5: https://lkml.kernel.org/r/20171211141435.2915-1-aleksey.makarov@cavium.com
+- fix the file headers (add SPDX tags, remove advertisment) (Philippe Ombredanne)
+- use "imply" instead of "select" (Richard Cochran)
+- add some code in cavium_ptp_get() for the case when the PTP driver has not been
+  registered with the PTP core
+
+v4: https://lkml.kernel.org/r/20171208103442.19354-1-aleksey.makarov@cavium.com
+- use IS_ENABLED. This fixes compilation of the ptp as a module (David Miller)
+- select PTP_1588_CLOCK, not depend on it.  This fixes a build warning.
+- change u64 to __be64.  This fixes the sparse warning
+  "warning: cast to restricted __be64"
+- make nicvf_config_hwtstamp() static. This fixes the sparse warning
+  "warning: symbol 'nicvf_config_hwtstamp' was not declared. Should it be static?"
+
+v3: https://lkml.kernel.org/r/20171206133100.26436-1-aleksey.makarov@cavium.com
+- rebase to net-next
+
+v2: https://lkml.kernel.org/r/20171117134909.8954-1-aleksey.makarov@cavium.com
+- use readq()/writeq() in place of cavium_ptp_reg_read()/cavium_ptp_reg_write(),
+  don't use readq_relaxed()/writeq_relaxed() (David Daney)
+
+v1: https://lkml.kernel.org/r/20171107190704.15458-1-aleksey.makarov@cavium.com
