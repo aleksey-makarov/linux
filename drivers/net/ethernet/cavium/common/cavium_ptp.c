@@ -8,6 +8,8 @@
 #include <linux/timecounter.h>
 #include <linux/pci.h>
 
+#include <linux/mtrace.h>
+
 #include "cavium_ptp.h"
 
 #define DRV_NAME	"Cavium PTP Driver"
@@ -224,21 +226,28 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	u64 clock_comp;
 	int err;
 
+	MTRACE("+");
+
 	clock = devm_kzalloc(dev, sizeof(*clock), GFP_KERNEL);
 	if (!clock) {
 		err = -ENOMEM;
+		MTRACE();
 		goto error;
 	}
 
 	clock->pdev = pdev;
 
 	err = pcim_enable_device(pdev);
-	if (err)
+	if (err) {
+		MTRACE();
 		goto error_free;
+	}
 
 	err = pcim_iomap_regions(pdev, 1 << PCI_PTP_BAR_NO, pci_name(pdev));
-	if (err)
+	if (err) {
+		MTRACE();
 		goto error_free;
+	}
 
 	clock->reg_base = pcim_iomap_table(pdev)[PCI_PTP_BAR_NO];
 
@@ -270,6 +279,7 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	};
 
 	clock_cfg = readq(clock->reg_base + PTP_CLOCK_CFG);
+	MTRACE("clock_cfg: 0x%016llx", clock_cfg);
 	clock_cfg |= PTP_CLOCK_CFG_PTP_EN;
 	writeq(clock_cfg, clock->reg_base + PTP_CLOCK_CFG);
 
@@ -279,14 +289,17 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	clock->ptp_clock = ptp_clock_register(&clock->ptp_info, dev);
 	if (!clock->ptp_clock) {
 		err = -ENODEV;
+		MTRACE();
 		goto error_stop;
 	}
 	if (IS_ERR(clock->ptp_clock)) {
 		err = PTR_ERR(clock->ptp_clock);
+		MTRACE();
 		goto error_stop;
 	}
 
 	pci_set_drvdata(pdev, clock);
+	MTRACE("-");
 	return 0;
 
 error_stop:
@@ -306,6 +319,7 @@ error:
 	 * `dev->driver_data`.
 	 */
 	pci_set_drvdata(pdev, ERR_PTR(err));
+	MTRACE("!");
 	return 0;
 }
 
