@@ -14,6 +14,7 @@
 
 #define DRV_NAME	"Cavium PTP Driver"
 
+#define PCI_DEVICE_ID_CAVIUM_GPIO	0xA00A
 #define PCI_DEVICE_ID_CAVIUM_PTP	0xA00C
 #define PCI_DEVICE_ID_CAVIUM_RST	0xA00E
 
@@ -22,12 +23,49 @@
 
 #define PTP_CLOCK_CFG		0xF00ULL
 #define  PTP_CLOCK_CFG_PTP_EN	BIT(0)
+#define  PTP_CLOCK_CFG_EXT_CLK_EN	BIT(1)
+#define  PTP_CLOCK_CFG_EXT_CLK_IN_SHIFT 2
+#define  PTP_CLOCK_CFG_EXT_CLK_IN_WIDTH 6
 #define PTP_CLOCK_LO		0xF08ULL
 #define PTP_CLOCK_HI		0xF10ULL
 #define PTP_CLOCK_COMP		0xF18ULL
 
 #define RST_BOOT	0x1600ULL
 #define CLOCK_BASE_RATE	50000000ULL
+
+static char *clk_src;
+static enum {
+	CLK_SRC_SOURCE_PLL, CLK_SRC_SOURCE_GPIO, CLK_SRC_SOURCE_QLM,
+} clk_src_source = CLK_SRC_SOURCE_PLL;
+static unsigned int clk_src_n;
+static unsigned long clk_freq;
+
+static int parse_clk_src(void)
+{
+	MTRACE("+");
+
+	if (!clk_src) {
+		MTRACE("-");
+		return 0;
+	}
+
+	if (!strcmp(clk_src, "pll")) {
+		clk_src_source = CLK_SRC_SOURCE_PLL;
+		MTRACE("- pll");
+		return 0;
+	} else if ((strstr(clk_src, "gpio") == clk_src)) {
+		clk_src_source = CLK_SRC_SOURCE_GPIO;
+		MTRACE("- gpio");
+		return kstrtouint(clk_src + 4, 0, &clk_src_n);
+	} else if ((strstr(clk_src, "qlm") == clk_src)) {
+		clk_src_source = CLK_SRC_SOURCE_QLM;
+		MTRACE("- qlm");
+		return kstrtouint(clk_src + 3, 0, &clk_src_n);
+	} else {
+		MTRACE("!");
+		return -EINVAL;
+	}
+}
 
 static u64 ptp_cavium_clock_get(void)
 {
@@ -53,6 +91,35 @@ error_put_pdev:
 
 error:
 	return ret;
+}
+
+static int ptp_cavium_gpio_set(void)
+{
+	struct pci_dev *pdev;
+	void __iomem *base;
+	int err = 0;
+
+	MTRACE("+");
+
+	pdev = pci_get_device(PCI_VENDOR_ID_CAVIUM,
+			      PCI_DEVICE_ID_CAVIUM_GPIO, NULL);
+	if (!pdev) {
+		MTRACE("!");
+		return -ENODEV;
+	}
+
+	base = pci_ioremap_bar(pdev, 0);
+	if (!base) {
+		err = -ENODEV;
+		goto error_put_pdev;
+	}
+
+	iounmap(base);
+
+error_put_pdev:
+	pci_dev_put(pdev);
+	MTRACE("- (%d)", err);
+	return err;
 }
 
 struct cavium_ptp *cavium_ptp_get(void)
@@ -228,6 +295,19 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 
 	MTRACE("+");
 
+	MTRACE("clk_src: \"%s\"", clk_src);
+	MTRACE("clk_freq: %lu", clk_freq);
+
+	err = parse_clk_src();
+	if (err)
+		return err;
+
+	if (clk_src_source != CLK_SRC_SOURCE_PLL && clk_freq == 0)
+		return -EINVAL;
+
+	MTRACE("clk_src_source: %d", (int)clk_src_source);
+	MTRACE("clk_src_n: %u", clk_src_n);
+
 	clock = devm_kzalloc(dev, sizeof(*clock), GFP_KERNEL);
 	if (!clock) {
 		err = -ENOMEM;
@@ -262,7 +342,10 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 	timecounter_init(&clock->time_counter, &clock->cycle_counter,
 			 ktime_to_ns(ktime_get_real()));
 
-	clock->clock_rate = ptp_cavium_clock_get();
+	if (clk_src_source == CLK_SRC_SOURCE_PLL)
+		clock->clock_rate = ptp_cavium_clock_get();
+	else
+		clock->clock_rate = clk_freq;
 
 	clock->ptp_info = (struct ptp_clock_info) {
 		.owner		= THIS_MODULE,
@@ -280,8 +363,22 @@ static int cavium_ptp_probe(struct pci_dev *pdev,
 
 	clock_cfg = readq(clock->reg_base + PTP_CLOCK_CFG);
 	MTRACE("clock_cfg: 0x%016llx", clock_cfg);
+	switch (clk_src_source) {
+	case CLK_SRC_SOURCE_PLL:
+		// clock_cfg &= ~PTP_CLOCK_CFG_EXT_CLK_EN;
+		break;
+	case CLK_SRC_SOURCE_QLM:
+		// clock_cfg |= PTP_CLOCK_CFG_EXT_CLK_EN;
+		break;
+	case CLK_SRC_SOURCE_GPIO:
+		// clock_cfg |= PTP_CLOCK_CFG_EXT_CLK_EN;
+		err = ptp_cavium_gpio_set();
+		MTRACE("ptp_cavium_gpio_set(): %d", err);
+		break;
+	}
 	clock_cfg |= PTP_CLOCK_CFG_PTP_EN;
 	writeq(clock_cfg, clock->reg_base + PTP_CLOCK_CFG);
+	MTRACE("clock_cfg: 0x%016llx", clock_cfg);
 
 	clock_comp = ((u64)1000000000ull << 32) / clock->clock_rate;
 	writeq(clock_comp, clock->reg_base + PTP_CLOCK_COMP);
@@ -351,6 +448,11 @@ static struct pci_driver cavium_ptp_driver = {
 };
 
 module_pci_driver(cavium_ptp_driver);
+
+module_param(clk_src, charp, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(clk_src, "Reference clock source: \"pll\" (default), \"gpioN\" or \"qlmN\"");
+module_param(clk_freq, ulong, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+MODULE_PARM_DESC(clk_freq, "Reference clock frequency, Hz");
 
 MODULE_DESCRIPTION(DRV_NAME);
 MODULE_AUTHOR("Cavium Networks <support@cavium.com>");
