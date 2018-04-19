@@ -18,13 +18,13 @@ upload_ptp_alarm() {
 }
 
 upload() {
-	echo_log "uploading..."
+	echo_log "uploading kernel image ..."
 	pbzip2 -c arch/arm64/boot/Image | ssh amakarov@build 'pbzip2 -dc > /srv/tftp/Image'
 	echo_log "done"
 }
 
-upload
-# upload_ptp_alarm
+# upload
+upload_ptp_alarm
 # upload_modules_alarm
 
 exit
